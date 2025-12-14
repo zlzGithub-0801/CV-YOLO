@@ -35,11 +35,10 @@ class CLIPRanker:
         
         if USE_CHINESE_CLIP:
             # 使用 Chinese-CLIP
-            # TODO
             self.model, self.preprocess = load_from_name(
-                model_name, 
+                config.CLIP_MODEL_NAME, 
                 device=self.device,
-                download_root='/mnt/e/zlzwork/CV/yolo_LLM/models/clip_cn_cit-b-16.pt'
+                download_root=config.CLIP_DOWNLOAD_ROOT
             )
         else:
             # 使用 OpenAI CLIP

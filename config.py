@@ -39,6 +39,7 @@ LLM_TOP_K = 50
 # CLIP 配置
 CLIP_MODEL_TYPE = "chinese-clip"  # 修改为 openai-clip（因为 chinese-clip 在 Windows 编译失败）
 CLIP_MODEL_NAME = "ViT-B-16"  # OpenAI CLIP 模型
+CLIP_DOWNLOAD_ROOT = "models"  # clip 模型下载路径，如果没有会创造该路径
 
 # ============ 生成配置 ============
 
