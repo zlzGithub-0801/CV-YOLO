@@ -1,0 +1,6 @@
+coco2017/
+
+models/
+
+__pycache__/
+*.pyc

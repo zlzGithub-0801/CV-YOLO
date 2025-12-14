@@ -1,0 +1,37 @@
+# YOLO + LLM Image Captioning System Dependencies
+
+# YOLO 物体检测
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+
+# LLM (Qwen) - 本地模型（可选）
+# 如果使用 API 调用，可以不安装以下依赖
+transformers>=4.35.0
+torch>=2.0.0
+accelerate>=0.24.0
+sentencepiece>=0.1.99
+
+# LLM API 调用（根据需要选择安装）
+# 阿里云通义千问 API
+dashscope>=1.14.0
+
+# OpenAI 兼容 API
+openai>=1.0.0
+
+# CLIP 图像-文本匹配
+# 选项1: OpenAI CLIP (英文)
+# clip @ git+https://github.com/openai/CLIP.git
+
+# 选项2: Chinese-CLIP (中文，推荐)
+cn-clip>=1.5.0
+
+# 图像处理
+pillow>=10.0.0
+numpy>=1.24.0
+
+# 工具库
+tqdm>=4.66.0
+matplotlib>=3.7.0
+
+# API 请求（已包含在 openai/dashscope 中，但可以单独使用）
+requests>=2.31.0
