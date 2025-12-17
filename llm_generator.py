@@ -206,7 +206,7 @@ class LLMGenerator:
         scene = yolo_results['scene']
         
         # 格式化位置信息
-        position_summary = {obj: pos[0] if pos else "未知" 
+        position_summary = {obj: ', '.join(pos) if pos else "未知" 
                            for obj, pos in positions.items()}
         
         # 使用配置中的模板
@@ -246,8 +246,11 @@ class LLMGenerator:
             line = re.sub(r'^\d+[.、\s]+', '', line)
             
             # 检查长度
+            print(f"[LLM] 处理描述: {line} (长度: {len(line)})")
             if config.MIN_CAPTION_LENGTH <= len(line) <= config.MAX_CAPTION_LENGTH + 10:
                 candidates.append(line)
+            else: 
+                print(f"[LLM] 忽略不符合长度要求的描述: {line} (长度: {len(line)})")
             
             if len(candidates) >= expected_num:
                 break

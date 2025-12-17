@@ -90,9 +90,11 @@ class CLIPRanker:
         results.sort(key=lambda x: x[1], reverse=True)
         
         print(f"[CLIP] 相似度计算完成")
-        print(f"       最高分: {results[0][1]:.4f}")
-        print(f"       最低分: {results[-1][1]:.4f}")
-        
+        if results:
+            print(f"       最高分: {results[0][1]:.4f}")
+            print(f"       最低分: {results[-1][1]:.4f}")
+        else:
+            print(f"       无候选描述可供排序")
         return results
     
     def get_best_caption(self, image_path, candidates, top_k=1):
