@@ -44,9 +44,9 @@ CLIP_DOWNLOAD_ROOT = "models"  # clip 模型下载路径，如果没有会创造
 # ============ 生成配置 ============
 
 # 候选描述数量
-NUM_CANDIDATES = 20  # 生成的候选字幕数量
-MAX_CAPTION_LENGTH = 50  # 字幕最大长度（字）
-MIN_CAPTION_LENGTH = 15  # 字幕最小长度（字）
+NUM_CANDIDATES = 3  # 生成的候选字幕数量
+MAX_CAPTION_LENGTH = 100  # 字幕最大长度（字）
+MIN_CAPTION_LENGTH = 50  # 字幕最小长度（字）
 
 # ============ 位置映射 ============
 

@@ -209,6 +209,11 @@ def create_summary_comparison(ranked_captions, num_show=5):
     plt.tight_layout()
     plt.show()
 
+def is_image_file(filename):
+    return filename.lower().endswith((
+        ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"
+    ))
+
 
 # ============ 测试代码 ============
 

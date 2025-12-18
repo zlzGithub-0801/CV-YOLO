@@ -5,12 +5,8 @@ from clip_ranker import CLIPRanker
 import json
 import os
 import time
+import utils
 from openai import OpenAI
-
-def is_image_file(filename):
-    return filename.lower().endswith((
-        ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"
-    ))
 
 def encode_image(image_path):
   with open(image_path, "rb") as image_file:
@@ -135,14 +131,14 @@ if __name__ == "__main__":
     cr = CLIPRanker()
     if os.path.isfile(input_path):
         # 单张图片
-        if not is_image_file(input_path):
+        if not utils.is_image_file(input_path):
             raise ValueError(f"Not an image file: {input_path}")
         generate_and_save_results(input_path, output_json_path, cr, args.save_result)
 
     elif os.path.isdir(input_path):
         for filename in sorted(os.listdir(input_path)):
             file_path = os.path.join(input_path, filename)
-            if os.path.isfile(file_path) and is_image_file(file_path):
+            if os.path.isfile(file_path) and utils.is_image_file(file_path):
                 generate_and_save_results(file_path, output_json_path, cr, args.save_result)
 
     else:
