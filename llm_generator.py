@@ -236,6 +236,8 @@ class LLMGenerator:
         lines = response.strip().split('\n')
         
         candidates = []
+        rejected_lines = []  # 记录被拒绝的行
+        
         for line in lines:
             line = line.strip()
             
@@ -243,22 +245,40 @@ class LLMGenerator:
                 continue
             
             # 移除编号
+            original_line = line
             line = re.sub(r'^\d+[.、\s]+', '', line)
             
             # 检查长度
-            print(f"[LLM] 处理描述: {line} (长度: {len(line)})")
-            if config.MIN_CAPTION_LENGTH <= len(line) <= config.MAX_CAPTION_LENGTH + 10:
+            line_length = len(line)
+            if config.MIN_CAPTION_LENGTH <= line_length <= config.MAX_CAPTION_LENGTH + 10:
                 candidates.append(line)
-            else: 
-                print(f"[LLM] 忽略不符合长度要求的描述: {line} (长度: {len(line)})")
+                print(f"[LLM] ✓ 接受描述 (长度 {line_length}): {line[:50]}...")
+            else:
+                rejected_lines.append((line, line_length))
+                print(f"[LLM] ✗ 拒绝描述 (长度 {line_length}, 要求 {config.MIN_CAPTION_LENGTH}-{config.MAX_CAPTION_LENGTH}): {line[:50]}...")
             
             if len(candidates) >= expected_num:
                 break
         
+        # 如果候选数量不足，显示诊断信息
         if len(candidates) < expected_num:
-            print(f"[LLM] 警告: 只生成了 {len(candidates)}/{expected_num} 个有效候选")
+            print(f"\n[LLM] ⚠ 警告: 只生成了 {len(candidates)}/{expected_num} 个有效候选")
+            
+            if rejected_lines:
+                print(f"[LLM] 共有 {len(rejected_lines)} 条描述因长度不符被拒绝:")
+                for i, (text, length) in enumerate(rejected_lines[:5], 1):
+                    print(f"       {i}. (长度 {length}) {text[:60]}...")
+                
+                # 如果没有有效候选但有被拒绝的候选，放宽限制
+                if len(candidates) == 0 and rejected_lines:
+                    print(f"\n[LLM] 尝试放宽长度限制以避免零候选...")
+                    for text, length in rejected_lines[:expected_num]:
+                        if length >= 20:  # 至少要有20个字
+                            candidates.append(text)
+                            print(f"[LLM] ✓ 降低标准后接受 (长度 {length}): {text[:50]}...")
         
         return candidates
+
 
 
 # ============ 测试代码 ============

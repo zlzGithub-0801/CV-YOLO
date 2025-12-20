@@ -185,11 +185,11 @@ else:
     avg_better_score = 0.0
     avg_better_delta = 0.0
 
-# ---------- 2. selected_list 前 30 项的平均 score ----------
+# ---------- 2. selected_list 前 60 项的平均 score ----------
 selected_output_scores = []
 selected_baseline_scores = []
 
-for name in selected_list[:30]:
+for name in selected_list[:60]:
     if name in output_map:
         selected_output_scores.append(output_map[name])
     if name in baseline_map:
@@ -205,7 +205,7 @@ avg_selected_baseline = (
     if selected_baseline_scores else 0.0
 )
 
-print("\n===== selected_list 前 30 项 =====")
+print("\n===== selected_list 前 60 项 =====")
 print(f"output 平均 clip_score:   {avg_selected_output:.4f}")
 print(f"baseline 平均 clip_score: {avg_selected_baseline:.4f}")
 print(f"平均提升 (output - baseline): "

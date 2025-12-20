@@ -88,6 +88,18 @@ class ImageCaptionGenerator:
         time_cost['llm'] = time.time() - t2
         print(f"   耗时: {time_cost['llm']:.2f} 秒\n")
         
+        # 检查是否生成了候选描述
+        if len(candidates) == 0:
+            print("   ❌ 错误: LLM 未能生成任何候选描述\n")
+            print("="*60)
+            print("✗ 处理失败")
+            print("="*60)
+            raise RuntimeError("LLM未能生成候选描述，请检查:\n"
+                             "  1. LLM API 配置是否正确 (config.py)\n"
+                             "  2. API 密钥是否有效\n"
+                             "  3. 网络连接是否正常\n"
+                             "  4. API 调用额度是否充足")
+        
         # 如果候选数量不足，警告
         if len(candidates) < num_candidates:
             print(f"   ⚠ 警告: 只生成了 {len(candidates)}/{num_candidates} 个候选\n")
@@ -100,6 +112,8 @@ class ImageCaptionGenerator:
         print(f"   耗时: {time_cost['clip']:.2f} 秒\n")
         
         # ========== 获取最佳结果 ==========
+        if len(ranked_captions) == 0:
+            raise RuntimeError("CLIP 排序后没有可用的候选描述")
         best_caption, best_score = ranked_captions[0]
         
         # 总耗时
