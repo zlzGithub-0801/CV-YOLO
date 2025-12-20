@@ -9,7 +9,7 @@ import matplotlib
 import numpy as np
 
 # 设置中文字体（根据操作系统调整）
-matplotlib.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'Arial Unicode MS', 'DejaVu Sans']
+matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Arial Unicode MS', 'DejaVu Sans']
 matplotlib.rcParams['axes.unicode_minus'] = False
 
 
@@ -208,11 +208,6 @@ def create_summary_comparison(ranked_captions, num_show=5):
     
     plt.tight_layout()
     plt.show()
-
-def is_image_file(filename):
-    return filename.lower().endswith((
-        ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"
-    ))
 
 
 # ============ 测试代码 ============

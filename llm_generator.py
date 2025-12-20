@@ -6,7 +6,6 @@ LLM 候选生成模块
 
 import config
 import re
-import base64
 
 
 class LLMGenerator:
@@ -88,11 +87,7 @@ class LLMGenerator:
         except ImportError:
             raise ImportError("请安装 transformers 和 torch: pip install transformers torch")
     
-    def encode_image(self, image_path):
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
-    
-    def generate_candidates(self, yolo_results, image_path, num_candidates=config.NUM_CANDIDATES):
+    def generate_candidates(self, yolo_results, num_candidates=config.NUM_CANDIDATES):
         """
         生成候选描述
         
@@ -112,7 +107,7 @@ class LLMGenerator:
         
         # 根据模式调用不同的生成方法
         if self.use_api:
-            response = self._generate_api(prompt, image_path)
+            response = self._generate_api(prompt)
         else:
             response = self._generate_local(prompt)
         
@@ -128,12 +123,12 @@ class LLMGenerator:
         
         return candidates
     
-    def _generate_api(self, prompt, image_path):
+    def _generate_api(self, prompt):
         """使用API生成文本"""
         if config.LLM_API_TYPE == "dashscope":
             return self._generate_dashscope(prompt)
         elif config.LLM_API_TYPE == "openai":
-            return self._generate_openai(prompt, image_path)
+            return self._generate_openai(prompt)
         else:
             raise ValueError(f"不支持的API类型: {config.LLM_API_TYPE}")
     
@@ -154,30 +149,13 @@ class LLMGenerator:
         else:
             raise Exception(f"API调用失败: {response.message}")
     
-    def _generate_openai(self, prompt, image_path):
+    def _generate_openai(self, prompt):
         """使用OpenAI兼容API生成（新版SDK）"""
-        img_type = f"image/{image_path.split('.')[-1]}"
-        img_b64_str = self.encode_image(image_path)
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{img_type};base64,{img_b64_str}"
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                ]
-            }
-        ]
         completion = self.openai_client.chat.completions.create(
             model=config.OPENAI_MODEL,
-            messages=messages,
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
             max_tokens=config.LLM_MAX_LENGTH,
             temperature=config.LLM_TEMPERATURE,
             top_p=config.LLM_TOP_P,
@@ -206,7 +184,7 @@ class LLMGenerator:
         scene = yolo_results['scene']
         
         # 格式化位置信息
-        position_summary = {obj: ', '.join(pos) if pos else "未知" 
+        position_summary = {obj: pos[0] if pos else "未知" 
                            for obj, pos in positions.items()}
         
         # 使用配置中的模板
@@ -236,8 +214,6 @@ class LLMGenerator:
         lines = response.strip().split('\n')
         
         candidates = []
-        rejected_lines = []  # 记录被拒绝的行
-        
         for line in lines:
             line = line.strip()
             
@@ -245,40 +221,19 @@ class LLMGenerator:
                 continue
             
             # 移除编号
-            original_line = line
             line = re.sub(r'^\d+[.、\s]+', '', line)
             
             # 检查长度
-            line_length = len(line)
-            if config.MIN_CAPTION_LENGTH <= line_length <= config.MAX_CAPTION_LENGTH + 10:
+            if config.MIN_CAPTION_LENGTH <= len(line) <= config.MAX_CAPTION_LENGTH + 10:
                 candidates.append(line)
-                print(f"[LLM] ✓ 接受描述 (长度 {line_length}): {line[:50]}...")
-            else:
-                rejected_lines.append((line, line_length))
-                print(f"[LLM] ✗ 拒绝描述 (长度 {line_length}, 要求 {config.MIN_CAPTION_LENGTH}-{config.MAX_CAPTION_LENGTH}): {line[:50]}...")
             
             if len(candidates) >= expected_num:
                 break
         
-        # 如果候选数量不足，显示诊断信息
         if len(candidates) < expected_num:
-            print(f"\n[LLM] ⚠ 警告: 只生成了 {len(candidates)}/{expected_num} 个有效候选")
-            
-            if rejected_lines:
-                print(f"[LLM] 共有 {len(rejected_lines)} 条描述因长度不符被拒绝:")
-                for i, (text, length) in enumerate(rejected_lines[:5], 1):
-                    print(f"       {i}. (长度 {length}) {text[:60]}...")
-                
-                # 如果没有有效候选但有被拒绝的候选，放宽限制
-                if len(candidates) == 0 and rejected_lines:
-                    print(f"\n[LLM] 尝试放宽长度限制以避免零候选...")
-                    for text, length in rejected_lines[:expected_num]:
-                        if length >= 20:  # 至少要有20个字
-                            candidates.append(text)
-                            print(f"[LLM] ✓ 降低标准后接受 (长度 {length}): {text[:50]}...")
+            print(f"[LLM] 警告: 只生成了 {len(candidates)}/{expected_num} 个有效候选")
         
         return candidates
-
 
 
 # ============ 测试代码 ============

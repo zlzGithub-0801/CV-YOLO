@@ -13,7 +13,6 @@ import argparse
 import os
 import time
 from pathlib import Path
-import json
 
 # 导入自定义模块
 from yolo_detector import YOLODetector
@@ -82,23 +81,10 @@ class ImageCaptionGenerator:
         t2 = time.time()
         candidates = self.llm_generator.generate_candidates(
             yolo_result, 
-            image_path,
             num_candidates=num_candidates
         )
         time_cost['llm'] = time.time() - t2
         print(f"   耗时: {time_cost['llm']:.2f} 秒\n")
-        
-        # 检查是否生成了候选描述
-        if len(candidates) == 0:
-            print("   ❌ 错误: LLM 未能生成任何候选描述\n")
-            print("="*60)
-            print("✗ 处理失败")
-            print("="*60)
-            raise RuntimeError("LLM未能生成候选描述，请检查:\n"
-                             "  1. LLM API 配置是否正确 (config.py)\n"
-                             "  2. API 密钥是否有效\n"
-                             "  3. 网络连接是否正常\n"
-                             "  4. API 调用额度是否充足")
         
         # 如果候选数量不足，警告
         if len(candidates) < num_candidates:
@@ -112,8 +98,6 @@ class ImageCaptionGenerator:
         print(f"   耗时: {time_cost['clip']:.2f} 秒\n")
         
         # ========== 获取最佳结果 ==========
-        if len(ranked_captions) == 0:
-            raise RuntimeError("CLIP 排序后没有可用的候选描述")
         best_caption, best_score = ranked_captions[0]
         
         # 总耗时
@@ -139,87 +123,6 @@ class ImageCaptionGenerator:
             'time_cost': time_cost
         }
 
-def process_single_image(
-    image_path,
-    generator,
-    output_dir,
-    num_candidates,
-    save_result=False,
-    visualize=False
-):
-    """
-    处理单张图像：
-    - 生成描述
-    - CLIP 评分（baseline: 单条）
-    - 追加保存 output.json
-    """
-    try:
-        # ---------- 生成描述 ----------
-        result = generator.generate(image_path, num_candidates)
-
-        if save_result:
-            os.makedirs(output_dir, exist_ok=True)
-            image_name = Path(image_path).stem
-
-            # ---------- 保存 output.json ----------
-            output_json_path = os.path.join(output_dir, "output.json")
-            if os.path.exists(output_json_path):
-                try:
-                    with open(output_json_path, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                    if not isinstance(data, list):
-                        data = []
-                except json.JSONDecodeError:
-                    data = []
-            else:
-                data = []
-            data.append({
-                "image_name": image_name,
-                "generated_text": result['best_caption'],
-                "clip_score": float(result['best_score']),
-                "time_cost": result['time_cost'],
-            })
-            with open(output_json_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, ensure_ascii=False, indent=4)
-
-            # ---------- 保存文本结果 ----------
-            text_output = os.path.join(output_dir, f"{image_name}_result.txt")
-            utils.save_results_to_file(
-                image_path,
-                result['yolo_result'],
-                result['candidates'],
-                result['ranked_captions'],
-                text_output
-            )
-
-            # ---------- 保存YOLO可视化 ----------
-            yolo_output = os.path.join(output_dir, f"{image_name}_yolo.jpg")
-            generator.yolo_detector.visualize(
-                result['yolo_result'], save_path=yolo_output
-            )
-
-        # ---------- 可视化 ----------
-        if visualize:
-            vis_output = None
-            if save_result:
-                vis_output = os.path.join(
-                    output_dir, f"{image_name}_visualization.png"
-                )
-            utils.visualize_results(
-                image_path,
-                result['yolo_result'],
-                result['candidates'],
-                result['ranked_captions'],
-                save_path=vis_output
-            )
-    except KeyboardInterrupt:
-        print("\n[INFO] Interrupted by user (Ctrl+C)")
-        raise
-    except Exception as e:
-        print(f"\n错误: 生成失败")
-        print(f"详细信息: {e}")
-        import traceback
-        traceback.print_exc()
 
 def main():
     """主函数"""
@@ -259,35 +162,65 @@ def main():
     
     # 检查图像是否存在
     if not os.path.exists(args.image_path):
-        print(f"错误: 图像或目录不存在: {args.image_path}")
+        print(f"错误: 图像不存在: {args.image_path}")
         return
     
-    generator = ImageCaptionGenerator()
-    if os.path.isfile(args.image_path):
-        if not utils.is_image_file(args.image_path):
-            raise ValueError(f"Not an image file: {args.image_path}")
-        process_single_image(
-            image_path=args.image_path,
-            generator=generator,
-            output_dir=args.output_dir,
-            num_candidates=args.num_candidates,
-            save_result=args.save_result,
-            visualize=args.visualize
-        )
-
-    elif os.path.isdir(args.image_path):
-        for filename in sorted(os.listdir(args.image_path)):
-            file_path = os.path.join(args.image_path, filename)
-            if os.path.isfile(file_path) and utils.is_image_file(file_path):
-                process_single_image(
-                    image_path=file_path,
-                    generator=generator,
-                    output_dir=args.output_dir,
-                    num_candidates=args.num_candidates,
-                    save_result=args.save_result,
-                    visualize=args.visualize
-                )
+    # 创建输出目录
+    os.makedirs(args.output_dir, exist_ok=True)
     
+    # 创建生成器
+    try:
+        generator = ImageCaptionGenerator()
+    except Exception as e:
+        print(f"\n错误: 初始化失败")
+        print(f"详细信息: {e}")
+        print("\n提示:")
+        print("  1. 确保已安装所有依赖: pip install -r requirements.txt")
+        print("  2. 确保已下载必要的模型")
+        return
+    
+    # 生成描述
+    try:
+        result = generator.generate(args.image_path, args.num_candidates)
+    except Exception as e:
+        print(f"\n错误: 生成失败")
+        print(f"详细信息: {e}")
+        import traceback
+        traceback.print_exc()
+        return
+    
+    # 保存结果
+    if args.save_result:
+        # 生成输出文件名
+        image_name = Path(args.image_path).stem
+        
+        # 保存文本结果
+        text_output = os.path.join(args.output_dir, f"{image_name}_result.txt")
+        utils.save_results_to_file(
+            args.image_path,
+            result['yolo_result'],
+            result['candidates'],
+            result['ranked_captions'],
+            text_output
+        )
+        
+        # 保存YOLO可视化
+        yolo_output = os.path.join(args.output_dir, f"{image_name}_yolo.jpg")
+        generator.yolo_detector.visualize(result['yolo_result'], save_path=yolo_output)
+    
+    # 可视化
+    if args.visualize:
+        vis_output = None
+        if args.save_result:
+            vis_output = os.path.join(args.output_dir, f"{image_name}_visualization.png")
+        
+        utils.visualize_results(
+            args.image_path,
+            result['yolo_result'],
+            result['candidates'],
+            result['ranked_captions'],
+            save_path=vis_output
+        )
 
 
 if __name__ == "__main__":

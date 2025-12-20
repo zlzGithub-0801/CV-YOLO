@@ -36,9 +36,9 @@ class CLIPRanker:
         if USE_CHINESE_CLIP:
             # 使用 Chinese-CLIP
             self.model, self.preprocess = load_from_name(
-                config.CLIP_MODEL_NAME, 
+                model_name, 
                 device=self.device,
-                download_root=config.CLIP_DOWNLOAD_ROOT
+                download_root='./model_cache'
             )
         else:
             # 使用 OpenAI CLIP
@@ -90,11 +90,9 @@ class CLIPRanker:
         results.sort(key=lambda x: x[1], reverse=True)
         
         print(f"[CLIP] 相似度计算完成")
-        if results:
-            print(f"       最高分: {results[0][1]:.4f}")
-            print(f"       最低分: {results[-1][1]:.4f}")
-        else:
-            print(f"       无候选描述可供排序")
+        print(f"       最高分: {results[0][1]:.4f}")
+        print(f"       最低分: {results[-1][1]:.4f}")
+        
         return results
     
     def get_best_caption(self, image_path, candidates, top_k=1):

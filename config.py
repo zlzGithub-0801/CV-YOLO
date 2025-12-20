@@ -22,13 +22,13 @@ LLM_USE_API = True  # 是否使用API调用（True）还是本地模型（False�
 LLM_API_TYPE = "openai"  # 改为使用 OpenAI 兼容接口
 
 # 阿里云通义千问 API 配置（暂时不用）
-DASHSCOPE_API_KEY = "sk-7effebc913014a5eac8f2a0e760bd36b"
-DASHSCOPE_MODEL = "qwen-max"
+# DASHSCOPE_API_KEY = "sk-2aa51224d0bc42fd9174c56d113585d6"
+# DASHSCOPE_MODEL = "qwen-max"
 
 # OpenAI 兼容 API 配置 ⚠️ 请填入你的千问API信息
-OPENAI_API_KEY = "sk-7effebc913014a5eac8f2a0e760bd36b"  # 你的API Key
+OPENAI_API_KEY = "---"  # 你的API Key
 OPENAI_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1"  # ⚠️ 例如: https://your-api-url.com/v1
-OPENAI_MODEL = "qwen-vl-max"  # 你的模型名称
+OPENAI_MODEL = "qwen-max"  # 你的模型名称
 
 # 通用生成参数
 LLM_MAX_LENGTH = 2048
@@ -37,16 +37,15 @@ LLM_TOP_P = 0.9
 LLM_TOP_K = 50
 
 # CLIP 配置
-CLIP_MODEL_TYPE = "chinese-clip"  # 修改为 openai-clip（因为 chinese-clip 在 Windows 编译失败）
-CLIP_MODEL_NAME = "ViT-B-16"  # OpenAI CLIP 模型
-CLIP_DOWNLOAD_ROOT = "models"  # clip 模型下载路径，如果没有会创造该路径
+CLIP_MODEL_TYPE = "openai-clip"  # 修改为 openai-clip（因为 chinese-clip 在 Windows 编译失败）
+CLIP_MODEL_NAME = "ViT-B/32"  # OpenAI CLIP 模型
 
 # ============ 生成配置 ============
 
 # 候选描述数量
-NUM_CANDIDATES = 3  # 生成的候选字幕数量
-MAX_CAPTION_LENGTH = 100  # 字幕最大长度（字）
-MIN_CAPTION_LENGTH = 50  # 字幕最小长度（字）
+NUM_CANDIDATES = 20  # 生成的候选字幕数量
+MAX_CAPTION_LENGTH = 50  # 字幕最大长度（字）
+MIN_CAPTION_LENGTH = 15  # 字幕最小长度（字）
 
 # ============ 位置映射 ============
 
@@ -114,16 +113,13 @@ PROMPT_TEMPLATE = """你是一个图像描述专家。根据计算机视觉模�
 - 位置分布：{positions}
 - 场景类型：{scene}
 
-1. **核对检测结果**：首先检查 YOLO 提供的检测信息，确认图像中物体及数量是否与实际一致。注意：如果你观察到图像与 YOLO 检测结果不符，请以 YOLO 看到的为准。
-2. **生成描述**：
-   - 基于你观察到的图像内容，以及 YOLO 检测信息，生成 {num_candidates} 个不同的中文描述。
-   - 每条描述长度在 {min_length}-{max_length} 字之间。
-   - 保持描述自然流畅，像人类书写。
-   - 在确保事实准确的前提下，一定要尽可能多地使用 YOLO 检测结果，如数量、位置信息。
-   - 描述开头请明确人物或主体，避免一开始就使用“她”或“他”。
-   - 描述要有变化（不同视角、不同重点、不同表达方式）。
-   - 每条描述保持完整，两条描述之间不要有上下承接的关系。
-   - 按可能性从高到低排列。
+## 任务
+生成 {num_candidates} 个不同的中文图像描述，要求：
+1. 每个描述 {min_length}-{max_length} 字
+2. 描述要有变化（不同视角、不同重点、不同表达方式）
+3. 确保事实准确（基于检测结果）
+4. 按可能性从高到低排列
+5. 描述要自然流畅，像人类写的一样
 
 ## 输出格式
 直接输出 {num_candidates} 个描述，每行一个，不要编号，不要其他说明。
@@ -131,23 +127,11 @@ PROMPT_TEMPLATE = """你是一个图像描述专家。根据计算机视觉模�
 ## 示例参考
 输入：物体=['人', '椅子', '桌子'], 数量={{'人': 2, '椅子': 4, '桌子': 1}}, 场景='室内'
 输出：
-画面中央两个人坐在餐桌旁边交谈，周围有四把椅子
-室内场景中两人围坐在桌子边，左侧和右侧各有两把椅子
-四把椅子围绕着餐桌整齐排列，两人正在使用其中两把
-一间宽敞的房间里有两个人和一张木质桌子，桌子四周摆放着四把椅子
-两人在摆放着四把椅子的桌子旁，一人位于画面左侧，另一人在右侧
-
-现在开始生成："""
-
-PROMPT_TEMPLATE_BASELINE = """你是一个图像描述专家。根据你看到的图片，生成一条准确的图像描述。
-
-生成描述的要求：
-- 描述长度在 {min_length}-{max_length} 字之间。
-- 保持描述自然流畅，像人类书写。
-- 描述开头请明确人物或主体，避免一开始就使用“她”或“他”。
-
-## 输出格式
-直接输出描述，不要其他说明。
+两个人坐在餐桌旁边交谈
+室内场景中两人围坐在桌子边
+四把椅子围绕着餐桌，两人正在使用其中两把
+一间房间里有两个人和一张桌子
+两人在摆放着四把椅子的桌子旁
 
 现在开始生成："""
 
