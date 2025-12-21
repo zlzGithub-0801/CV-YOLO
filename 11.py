@@ -159,12 +159,22 @@ def process_single_image(
                     data = []
             else:
                 data = []
-            data.append({
+            
+            new_item = {
                 "image_name": image_name,
                 "generated_text": result['best_caption'],
                 "clip_score": float(result['best_score']),
                 "time_cost": result['time_cost'],
-            })
+            }
+            found = False
+            for i, item in enumerate(data):
+                if item.get("image_name") == image_name:
+                    data[i] = new_item
+                    found = True
+                    break
+            if not found:
+                data.append(new_item)
+
             with open(output_json_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=4)
 

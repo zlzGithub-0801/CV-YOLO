@@ -1,8 +1,8 @@
 import json
 
 # 文件路径
-output_path = "total_output/output.json"
-baseline_path = "total_output/output_baseline.json"
+output_path = "outputs/output.json"
+baseline_path = "outputs/output_baseline.json"
 
 # 读取 JSON
 with open(output_path, "r", encoding="utf-8") as f:
